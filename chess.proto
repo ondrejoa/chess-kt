@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package chess;
+option java_package = "proto";
+option java_multiple_files = true;
+
+enum ChessPieceType {
+  KING = 0;
+  QUEEN = 1;
+  ROOK = 2;
+  BISHOP = 3;
+  KNIGHT = 4;
+  PAWN = 5;
+}
+
+enum ChessColor {
+  BLACK = 0;
+  WHITE = 1;
+}
+
+message ChessPiece {
+  ChessPieceType type = 1;
+  ChessColor color = 2;
+}
