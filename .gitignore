@@ -116,3 +116,6 @@ build/
 gradle/
 .gradle/
 .idea/
+
+*.zip
+*.chess
