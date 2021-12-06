@@ -131,6 +131,7 @@ class ChessBoardView(w: Double, h: Double) : Canvas(w + OFFSET_X, h + OFFSET_Y),
                         controller?.tryMove(s, SquareLocation(x, y))
                     }
                 }
+                else -> {}
             }
         }
     }
