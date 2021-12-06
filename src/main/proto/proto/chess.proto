@@ -22,3 +22,22 @@ message ChessPiece {
   ChessPieceType type = 1;
   ChessColor color = 2;
 }
+
+message Location {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message PieceWithLocation {
+  ChessPiece piece = 1;
+  Location location = 2;
+}
+
+message SaveGame {
+  ChessColor current_player = 1;
+  repeated PieceWithLocation pieces = 2;
+  bool w_00_castling = 3;
+  bool w_70_castling = 4;
+  bool b_07_castling = 5;
+  bool b_77_castling = 6;
+}

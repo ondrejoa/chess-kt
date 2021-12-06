@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     idea
-    kotlin("jvm") version "1.5.31"
+    kotlin("jvm") version "1.6.0"
     id("org.openjfx.javafxplugin") version "0.0.10"
     id("com.google.protobuf") version "0.8.17"
     application
@@ -28,14 +28,21 @@ dependencies {
     implementation("com.google.protobuf:protobuf-kotlin:3.19.0-rc-1")
     implementation("org.openjfx:javafx:11")
     testImplementation(kotlin("test"))
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.0")
 }
 
 tasks.test {
     useJUnit()
 }
 
-tasks.withType<KotlinCompile>() {
+tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "11"
+}
+
+tasks.withType<Jar> {
+    manifest {
+        attributes["Main-Class"] =  "MainKt"
+    }
 }
 
 

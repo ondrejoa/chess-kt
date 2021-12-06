@@ -3,15 +3,19 @@ package rules
 import model.ChessModel
 import model.SquareLocation
 import proto.ChessColor
+import proto.ChessPiece
 
-class KingRule(predicate: RulePredicate): Rule(predicate) {
+
+typealias KingAdditionalPredicate = (ChessPiece?, ChessModel?, SquareLocation) -> Boolean
+
+class KingRule(predicate: RulePredicate, private val predicate2: KingAdditionalPredicate): Rule(predicate) {
     override fun apply(model: ChessModel, square: SquareLocation): Set<SquareLocation> {
         val possibilities: MutableSet<SquareLocation> = mutableSetOf()
         for (x in -1..1)
             for (y in -1..1)
                 possibilities.add(SquareLocation(square.x + x, square.y + y))
         return possibilities.filter {
-            it.isValid() && predicate(model.pieceAt(it))
+            it.isValid() && predicate(model.pieceAt(it)) && predicate2(model.pieceAt(square), model, it)
         }.toSet()
     }
 }

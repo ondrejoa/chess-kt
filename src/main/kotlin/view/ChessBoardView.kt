@@ -13,7 +13,7 @@ import model.SquareLocation
 import proto.ChessPiece
 import rules.Rules
 
-class ChessBoardView(w: Double, h: Double): Canvas(w + OFFSET_X, h + OFFSET_Y) {
+class ChessBoardView(w: Double, h: Double) : Canvas(w + OFFSET_X, h + OFFSET_Y), ChessModel.OnSquaresModifiedListener {
     companion object {
         val PLAYER_BLACK_COLOR: Color = Color(0.0, 0.0, 0.0, 1.0)
         val PLAYER_WHITE_COLOR: Color = Color(0.9, 0.9, 0.9, 1.0)
@@ -27,24 +27,22 @@ class ChessBoardView(w: Double, h: Double): Canvas(w + OFFSET_X, h + OFFSET_Y) {
     private val loader = PieceLoader()
 
     var model: ChessModel? = null
-    set(value) {
-        if (field != null) {
-            // TODO: Unsubscribe
-        }
-        for (x in 0..7) {
-            for (y in 0..7) {
-                resetSquare(x, y)
-                val piece = value?.pieceAt(x, y)
-                if (piece != null) {
-                    drawPiece(piece, x, y)
+        set(value) {
+            if (field != null) {
+                // TODO: Unsubscribe
+            }
+            for (x in 0..7) {
+                for (y in 0..7) {
+                    resetSquare(x, y)
+                    val piece = value?.pieceAt(x, y)
+                    if (piece != null) {
+                        drawPiece(piece, x, y)
+                    }
                 }
             }
+            value?.addOnSquaresModifiedListener(this)
+            field = value
         }
-        value?.addOnModificationListener {
-            redrawSquares(it)
-        }
-        field = value
-    }
 
     var controller: ChessController? = null
 
@@ -53,44 +51,51 @@ class ChessBoardView(w: Double, h: Double): Canvas(w + OFFSET_X, h + OFFSET_Y) {
     private var highlighted: MutableSet<SquareLocation> = mutableSetOf()
 
     private var selected: SquareLocation? = null
-    set(value) {
-        if (value == field)
-            return
-        if (value == null) {
-            for (square in highlighted)
-                redrawSquare(square.x, square.y)
-            highlighted.clear()
-        }
-        else if (value != field) {
-            for (square in highlighted)
-                redrawSquare(square.x, square.y)
-            highlighted.clear()
-            highlighted.add(value)
-            redrawSquare(value.x, value.y, HighlightColors(Color.LIGHTBLUE, Color.BLUE))
+        set(value) {
+            if (value == field) // If it is already selected then do nothing
+                return
+            if (value == null) { // If null then clear highlights
+                for (square in highlighted)
+                    redrawSquare(square.x, square.y)
+                highlighted.clear()
+            } else if (value != field) { // New selection (!=null) highlights should be updated
+                for (square in highlighted) // Clear effect from highlighted squares
+                    redrawSquare(square.x, square.y)
+                highlighted.clear() // Clear highlights set
+                highlighted.add(value) // Selected field should be highlighted
+                redrawSquare(
+                    value.x,
+                    value.y,
+                    HighlightColors(Color.LIGHTBLUE, Color.BLUE)
+                ) // Redraw selected square with proper highlight color
 
-            val piece = model?.pieceAt(value)
-            if (piece != null) {
-                val movementRules = Rules.matchMovement(piece)
-                val m = model
-                for (rule in movementRules) {
-                    if (m != null) {
-                        val movementSquares = rule.apply(m, value)
-                        highlighted.addAll(movementSquares)
-                        redrawSquares(movementSquares, HighlightColors(Color.LIGHTGREEN, Color.GREEN))
+                val piece =
+                    model?.pieceAt(value) // Only check movement/attack if the square is occupied by a chess piece
+                if (piece != null) {
+                    val movementRules = Rules.matchMovement(piece) // Squares where the chess piece can move
+                    val m = model
+                    for (rule in movementRules) { // For all movement rules (king has more than one)
+                        if (m != null) {
+                            val movementSquares = rule.apply(m, value) // Apply movement rule
+                            highlighted.addAll(movementSquares) // Add all to highlighted set
+                            redrawSquares(
+                                movementSquares,
+                                HighlightColors(Color.LIGHTGREEN, Color.GREEN)
+                            ) // Redraw squares with proper highlight color
+                        }
                     }
-                }
-                val attackRules = Rules.matchAttack(piece)
-                for (rule in attackRules) {
-                    if (m != null) {
-                        val attackSquares = rule.apply(m, value)
-                        highlighted.addAll(attackSquares)
-                        redrawSquares(attackSquares, HighlightColors(Color.RED, Color.DARKRED))
+                    val attackRules = Rules.matchAttack(piece) // Squares which the chess piece can attack
+                    for (rule in attackRules) {
+                        if (m != null) {
+                            val attackSquares = rule.apply(m, value)
+                            highlighted.addAll(attackSquares)
+                            redrawSquares(attackSquares, HighlightColors(Color.RED, Color.DARKRED))
+                        }
                     }
                 }
             }
+            field = value
         }
-        field = value
-    }
 
     init {
         graphicsContext2D.textAlign = TextAlignment.CENTER
@@ -118,7 +123,7 @@ class ChessBoardView(w: Double, h: Double): Canvas(w + OFFSET_X, h + OFFSET_Y) {
             val x: Int = ((it.x - OFFSET_X) / cellSizeX).toInt()
             val y: Int = ((it.y - OFFSET_Y) / cellSizeY).toInt()
             when (it.button) {
-                MouseButton.SECONDARY -> selected = SquareLocation(x, y)
+                MouseButton.SECONDARY -> selected = controller?.trySelect(SquareLocation(x, y))
                 MouseButton.PRIMARY -> {
                     val s = selected
                     selected = null
@@ -154,6 +159,11 @@ class ChessBoardView(w: Double, h: Double): Canvas(w + OFFSET_X, h + OFFSET_Y) {
         else
             highlight?.light ?: PLAYER_WHITE_COLOR
         graphicsContext2D.fillRect(x * cellSizeX + OFFSET_X, y * cellSizeY + OFFSET_Y, cellSizeX, cellSizeY)
+    }
+
+    override fun onSquaresModified(squares: Set<SquareLocation>) {
+        selected = null
+        redrawSquares(squares)
     }
 
 }
