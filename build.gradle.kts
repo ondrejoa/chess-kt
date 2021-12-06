@@ -1,4 +1,9 @@
+@file:Suppress("DEPRECATION")
+
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.google.protobuf.gradle.*
+import org.gradle.api.internal.HasConvention
+import org.gradle.kotlin.dsl.provider.gradleKotlinDslOf
 
 plugins {
     idea
@@ -8,6 +13,8 @@ plugins {
     application
 }
 
+val Project.protobuf: ProtobufConvention get() =
+    this.convention.getPlugin(ProtobufConvention::class)
 
 group = "me.ondrejoa"
 version = "1.0-SNAPSHOT"
@@ -44,6 +51,13 @@ tasks.withType<Jar> {
         attributes["Main-Class"] =  "MainKt"
     }
 }
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.0.0"
+    }
+}
+
 
 
 application {
